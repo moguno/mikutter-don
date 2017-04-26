@@ -1,4 +1,4 @@
-Plugin.create(:"mikutter-don") {
+Plugin.create(:"mikutter丼") {
   UserConfig[:don_instance] ||= "https://pawoo.net"
   UserConfig[:don_user] ||= ""
   UserConfig[:don_password] ||= ""

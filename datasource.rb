@@ -1,9 +1,7 @@
-Plugin.create(:"mikutter-datasource-exchange") {
+Plugin.create(:"mikutter丼") {
   # データソース
   filter_extract_datasources { |datasources|
-    @currencies.each { |currency|
-      datasources[:"mikutter_don"] = _("Mastodon")
-    }
+    datasources[:"mikutter丼"] = _("Mastodon")
 
     [datasources]
   }

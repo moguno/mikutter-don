@@ -7,11 +7,11 @@ require_relative "datasource"
 require_relative "models"
 require_relative "settings"
 
-Plugin.create(:"mikutter-don") {
+Plugin.create(:"mikutter丼") {
 
   def get_client(instance, user, password)
     tmp_client = Mastodon::REST::Client.new(base_url: instance)
-    app = tmp_client.create_app("mikutter-don", "urn:ietf:wg:oauth:2.0:oob", "read write follow")
+    app = tmp_client.create_app("mikutter丼", "urn:ietf:wg:oauth:2.0:oob", "read write follow")
 
     oauth = OAuth2::Client.new(app.client_id, app.client_secret, site: instance)
     token = oauth.password.get_token(user, password, scope: "read write follow")
@@ -52,7 +52,7 @@ Plugin.create(:"mikutter-don") {
               )
       
               Delayer.new {
-                Plugin.call(:extract_receive_message, :mikutter_don, [message])
+                Plugin.call(:extract_receive_message, :"mikutter丼", [message])
               }
             end
           }

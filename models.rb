@@ -2,7 +2,7 @@
 class DonUser < Retriever::Model
   include Retriever::Model::UserMixin
 
-  register(:don_user, name: Plugin[:"mikutter-don"]._("Mastodon"))
+  register(:don_user, name: Plugin[:"mikutter丼"]._("Mastodon"))
 
   field.string(:idname, required: true)
   field.string(:name, required: true)
@@ -14,7 +14,7 @@ end
 class DonMessage < Retriever::Model
   include Retriever::Model::MessageMixin
 
-  register(:don_message, name: Plugin[:"mikutter-don"]._("Mastodon"))
+  register(:don_message, name: Plugin[:"mikutter丼"]._("Mastodon"))
 
   field.string(:description, required: false)
   field.time(:created, required: false)
