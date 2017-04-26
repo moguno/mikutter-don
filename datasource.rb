@@ -1,7 +1,9 @@
 Plugin.create(:"mikutter丼") {
   # データソース
   filter_extract_datasources { |datasources|
-    datasources[:"mikutter丼"] = _("Mastodon")
+    @timelines.each { |method, name|
+      datasources[:"mikutter丼/#{name}"] = _("Mastodon/#{name}")
+    }
 
     [datasources]
   }

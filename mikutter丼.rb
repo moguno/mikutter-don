@@ -8,6 +8,12 @@ require_relative "models"
 require_relative "settings"
 
 Plugin.create(:"mikutter丼") {
+  @timelines = [
+    [ :streaming_local_timeline, "ローカルタイムライン" ],
+    [ :streaming_public_timeline, "連邦タイムライン" ],
+    [ :streaming_user_timeline, "ユーザタイムライン" ],
+#    [ :streaming_hashtag_timeline, "ハッシュタグタイムライン" ],
+  ]
 
   def get_client(instance, user, password)
     tmp_client = Mastodon::REST::Client.new(base_url: instance)
@@ -53,14 +59,15 @@ Plugin.create(:"mikutter丼") {
             @client = get_client(UserConfig[:don_instance], UserConfig[:don_user], UserConfig[:don_password])
           end
 
-          @client.streaming_public_timeline { |event, data|
-            if event == "update"
-              message = to_message(data)
-      
-              Delayer.new {
-                Plugin.call(:extract_receive_message, :"mikutter丼", [message])
+          @timelines.each { |method, name|
+            Thread.new {
+              @client.send(method) { |event, data|
+                if event == "update"
+                  message = to_message(data)
+                  Plugin.call(:extract_receive_message, :"mikutter丼/#{name}", [message])
+                end
               }
-            end
+            }
           }
         rescue => e
           puts e

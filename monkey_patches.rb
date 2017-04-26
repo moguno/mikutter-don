@@ -6,10 +6,23 @@ module Mastodon
       def streaming_public_timeline(options = {}, &block)
         Mastodon::Streaming::Request.new(self, :get, "/api/v1/streaming/public", options).perform(&block)
       end
+
+      def streaming_local_timeline(options = {}, &block)
+        Mastodon::Streaming::Request.new(self, :get, "/api/v1/streaming/public/local", options).perform(&block)
+      end
+
+      def streaming_user_timeline(options = {}, &block)
+        Mastodon::Streaming::Request.new(self, :get, "/api/v1/streaming/user", options).perform(&block)
+      end
+
+      def streaming_hashtag_timeline(options = {}, &block)
+        Mastodon::Streaming::Request.new(self, :get, "/api/v1/streaming/hashtag", options).perform(&block)
+      end
     end
 
     class Request < Mastodon::REST::Request
       def perform(&block)
+
         options_key = @request_method == :get ? :params : :form
         response    = http_client.headers(@headers).public_send(@request_method, @uri.to_s, options_key => @options)
 
