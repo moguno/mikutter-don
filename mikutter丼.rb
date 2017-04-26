@@ -21,6 +21,30 @@ Plugin.create(:"mikutter丼") {
     return client
   end
 
+  def to_message(mastodon_status)
+    avatar_url = if mastodon_status.attributes["account"]["avatar"] =~ /^\//
+      UserConfig[:don_instance] + "/" + mastodon_status.attributes["account"]["avatar"]
+    else
+      mastodon_status.attributes["account"]["avatar"]
+    end
+
+    user = DonUser.new(
+      name: mastodon_status.attributes["account"]["username"],
+      idname: mastodon_status.attributes["account"]["acct"],
+      uri: mastodon_status.attributes["account"]["url"],
+      profile_image_url: avatar_url
+    )
+
+    message = DonMessage.new(
+      uri: mastodon_status.attributes["url"],
+      created: Time.parse(mastodon_status.attributes["created_at"]).localtime,
+      description: Sanitize.clean(mastodon_status.attributes["content"]),
+      user: user
+    )
+
+    return message
+  end
+
   on_period { |service|
     if service == Service.primary
       Thread.new {
@@ -31,25 +55,7 @@ Plugin.create(:"mikutter丼") {
 
           @client.streaming_public_timeline { |event, data|
             if event == "update"
-              avatar_url = if data.attributes["account"]["avatar"] =~ /^\//
-                UserConfig[:don_instance] + "/" + data.attributes["account"]["avatar"]
-              else
-                data.attributes["account"]["avatar"]
-              end
-
-              user = DonUser.new(
-                name: data.attributes["account"]["username"],
-                idname: data.attributes["account"]["acct"],
-                uri: data.attributes["account"]["url"],
-                profile_image_url: avatar_url
-              )
-
-              message = DonMessage.new(
-                uri: data.attributes["url"],
-                created: Time.parse(data.attributes["created_at"]).localtime,
-                description: Sanitize.clean(data.attributes["content"]),
-                user: user
-              )
+              message = to_message(data)
       
               Delayer.new {
                 Plugin.call(:extract_receive_message, :"mikutter丼", [message])
