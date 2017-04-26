@@ -1,68 +1,65 @@
 require "mastodon"
 require "oauth2"
+require "sanitize"
 
 require_relative "monkey_patches"
 require_relative "datasource"
 require_relative "models"
+require_relative "settings"
 
 Plugin.create(:"mikutter-don") {
-  def poll_timelines
-    loop {
-begin
-      messages = @client.public_timeline.map { |_|
-        user = DonUser.new(
-          name: _.attributes["account"]["username"],
-          idname: _.attributes["account"]["acct"],
-          uri: _.attributes["account"]["url"],
-          profile_image_url: _.attributes["account"]["avatar"]
-        )
 
-        p _.attributes["url"]
-        p _.attributes["created_at"]
-        p _.attributes["content"]
-        p user
+  def get_client(instance, user, password)
+    tmp_client = Mastodon::REST::Client.new(base_url: instance)
+    app = tmp_client.create_app("mikutter-don", "urn:ietf:wg:oauth:2.0:oob", "read write follow")
 
-        message = DonMessage.new(
-          uri: _.attributes["url"],
-          created: _.attributes["created_at"],
-          description: _.attributes["content"],
-          user: user
-        )
-      
-        message
-      }
+    oauth = OAuth2::Client.new(app.client_id, app.client_secret, site: instance)
+    token = oauth.password.get_token(user, password, scope: "read write follow")
 
-      Delayer.new {
-        Plugin.call(:extract_receive_message, :mikutter_don, messages)
-      }
+    client = Mastodon::REST::Client.new(base_url: instance, bearer_token: token.token)
 
-      break
-rescue => e
-puts e
-puts e.backtrace
-end
-
-      sleep(10)
-    }
+    return client
   end
 
-  on_boot { |service|
+  on_period { |service|
     if service == Service.primary
       Thread.new {
-        tmp_client = Mastodon::REST::Client.new(base_url:"https://pawoo.net")
-        app = tmp_client.create_app("mikutter-don", "urn:ietf:wg:oauth:2.0:oob", "read write follow")
+        begin
+          if !@client
+            @client = get_client(UserConfig[:don_instance], UserConfig[:don_user], UserConfig[:don_password])
+          end
 
-        oauth = OAuth2::Client.new(app.client_id, app.client_secret, site: "https://pawoo.net")
-        token = oauth.password.get_token("shopping@0kn.sakura.ne.jp", "12345678", scope: "read write follow")
+          @client.streaming_public_timeline { |event, data|
+            if event == "update"
+              avatar_url = if data.attributes["account"]["avatar"] =~ /^\//
+                UserConfig[:don_instance] + "/" + data.attributes["account"]["avatar"]
+              else
+                data.attributes["account"]["avatar"]
+              end
 
-        @client = Mastodon::REST::Client.new(base_url:"https://pawoo.net", bearer_token: token.token)
-      }.next {
-        Mastodon::REST::Request.new(@client, "get", "/api/v1/streaming/public", {}).perform { |buf|
-        p buf
-      }
-        
+              user = DonUser.new(
+                name: data.attributes["account"]["username"],
+                idname: data.attributes["account"]["acct"],
+                uri: data.attributes["account"]["url"],
+                profile_image_url: avatar_url
+              )
 
-        #poll_timelines
+              message = DonMessage.new(
+                uri: data.attributes["url"],
+                created: Time.parse(data.attributes["created_at"]).localtime,
+                description: Sanitize.clean(data.attributes["content"]),
+                user: user
+              )
+      
+              Delayer.new {
+                Plugin.call(:extract_receive_message, :mikutter_don, [message])
+              }
+            end
+          }
+        rescue => e
+          puts e
+          puts e.backtrace
+        end
       }
     end
   }

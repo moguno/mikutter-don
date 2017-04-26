@@ -1,0 +1,9 @@
+---
+slug: :mikutter-don
+depends:
+  mikutter: 3.5.4
+  plugin: []
+version: '1.0'
+author: 
+name: mikutter-don
+description: ねぎたっぷりみくったー丼
