@@ -33,7 +33,7 @@ module Mastodon
           event = nil
 
           loop {
-            partial = response.body.readpartial(1024 * 1024)
+            partial = response.body.readpartial(10 * 1024)
 
             if !partial
               raise Mastodon::Error::ClientError.new("streaming connection closed")
@@ -45,9 +45,9 @@ module Mastodon
               line = $1
               buffer = $2
 
-              if line =~ /^event:/
+              if line.start_with?("event:")
                 event = line.split(/:/)[1].strip
-              elsif line =~ /^data:/ && event
+              elsif line.start_with?("data") && event
                 body = line.gsub(/^data: /, "")
 
                 if event == "update"

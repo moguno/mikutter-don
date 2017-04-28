@@ -1,6 +1,7 @@
 require "mastodon"
 require "oauth2"
 require "sanitize"
+require "thread"
 
 require_relative "monkey_patches"
 require_relative "datasource"
@@ -14,6 +15,32 @@ Plugin.create(:"mikutter丼") {
     [ :streaming_user_timeline, "ユーザタイムライン" ],
 #    [ :streaming_hashtag_timeline, "ハッシュタグタイムライン" ],
   ]
+
+  def message_factory_start(&xproc)
+    queue = Queue.new
+
+    Thread.new {
+      loop {
+        status = []
+
+        10.times {
+          status << queue.deq
+
+          if queue.empty?
+            break
+          end
+        }
+
+        if status.length != 0
+          xproc.(status)
+        end
+
+        sleep(10.5)
+      }
+    }
+
+    return queue
+  end
 
   def get_client(instance, user, password)
     tmp_client = Mastodon::REST::Client.new(base_url: instance)
@@ -61,10 +88,17 @@ Plugin.create(:"mikutter丼") {
 
           @timelines.each { |method, name|
             Thread.new {
+              tmp = message_factory_start { |status|
+                messages = status.map { |_| to_message(_) }
+
+                Plugin.call(:extract_receive_message, :"mikutter丼/#{name}", messages)
+              }
+
+              Thread.current[:queue] = tmp
+
               @client.send(method) { |event, data|
                 if event == "update"
-                  message = to_message(data)
-                  Plugin.call(:extract_receive_message, :"mikutter丼/#{name}", [message])
+                  Thread.current[:queue].enq(data)
                 end
               }
             }
