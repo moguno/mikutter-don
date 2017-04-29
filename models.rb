@@ -20,4 +20,6 @@ class DonMessage < Retriever::Model
   field.time(:created, required: false)
   field.string(:uri, required: true)
   field.has(:user, DonUser, required: true)
+
+  entity_class Retriever::Entity::ExtendedTwitterEntity
 end
