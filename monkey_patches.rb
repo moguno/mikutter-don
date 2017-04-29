@@ -27,42 +27,47 @@ module Mastodon
         response    = http_client.headers(@headers).public_send(@request_method, @uri.to_s, options_key => @options)
 
         if Mastodon::Error::ERRORS.include?(response.code)
-          return
-        else
-          buffer = ""
-          event = nil
+          raise Mastodon::Error::ERRORS[response.code].new
+        end
+
+        buffer = ""
+        event = nil
+
+        loop {
+          partial = response.body.readpartial(10 * 1024)
+
+          if !partial
+            raise Mastodon::Error::ClientError.new("streaming connection closed")
+          end
+
+          buffer += "\n#{partial}"
 
           loop {
-            partial = response.body.readpartial(10 * 1024)
+            tmp = buffer.partition("\n")
 
-            if !partial
-              raise Mastodon::Error::ClientError.new("streaming connection closed")
+            if tmp[1] == ""
+              break
             end
 
-            buffer += "\n#{partial}"
+            line = tmp[0]
+            buffer = tmp[2]
 
-            while buffer =~ /^([^\n]+)\n(.*)$/
-              line = $1
-              buffer = $2
+            if line.start_with?("event:")
+              event = line.partition(":")[2].strip
+            elsif line.start_with?("data:") && event
+              body = line.partition(":")[2].strip
 
-              if line.start_with?("event:")
-                event = line.split(/:/)[1].strip
-              elsif line.start_with?("data") && event
-                body = line.gsub(/^data: /, "")
-
-                if event == "update"
-                  status = Mastodon::Status.new(JSON.parse(body).to_h)
-                  block.(event, status)
-                else
-                  block.(event, body)
-                end
-
-                event = nil
+              if event == "update"
+                status = Mastodon::Status.new(JSON.parse(body).to_h)
+                block.(event, status)
+              else
+                block.(event, body)
               end
 
+              event = nil
             end
           }
-        end
+        }
       end
 
       def http_client
