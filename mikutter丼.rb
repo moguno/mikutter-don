@@ -35,7 +35,7 @@ Plugin.create(:"mikutter丼") {
           xproc.(status)
         end
 
-        sleep(10.5)
+        sleep(1.0)
       }
     }
 
@@ -61,14 +61,14 @@ Plugin.create(:"mikutter丼") {
       mastodon_status.attributes["account"]["avatar"]
     end
 
-    user = DonUser.new(
+    user = DonUser.new_ifnecessary(
       name: mastodon_status.attributes["account"]["username"],
       idname: mastodon_status.attributes["account"]["acct"],
       uri: mastodon_status.attributes["account"]["url"],
       profile_image_url: avatar_url
     )
 
-    message = DonMessage.new(
+    message = DonMessage.new_ifnecessary(
       uri: mastodon_status.attributes["url"],
       created: Time.parse(mastodon_status.attributes["created_at"]).localtime,
       description: Sanitize.clean(mastodon_status.attributes["content"]),

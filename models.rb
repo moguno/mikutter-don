@@ -1,6 +1,20 @@
+require "fnv"
+
+module IdentityUtils
+
+  # URIからIDを作る
+  def id
+    # 軽いと噂のFNV1ハッシュ関数
+    @fnv ||= FNV.new
+    @fnv.fnv1a_64(self.uri)
+  end
+end
+
 # ユーザーモデル
 class DonUser < Retriever::Model
   include Retriever::Model::UserMixin
+  include Retriever::Model::Identity
+  include IdentityUtils
 
   register(:don_user, name: Plugin[:"mikutter丼"]._("Mastodon"))
 
@@ -13,6 +27,8 @@ end
 # メッセージモデル
 class DonMessage < Retriever::Model
   include Retriever::Model::MessageMixin
+  include Retriever::Model::Identity
+  include IdentityUtils
 
   register(:don_message, name: Plugin[:"mikutter丼"]._("Mastodon"))
 
@@ -23,3 +39,4 @@ class DonMessage < Retriever::Model
 
   entity_class Retriever::Entity::ExtendedTwitterEntity
 end
+

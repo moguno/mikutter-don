@@ -4,4 +4,5 @@ group :default do
   gem 'mastodon-api'
   gem 'oauth2'
   gem 'sanitize'
+  gem 'fnv'
 end
