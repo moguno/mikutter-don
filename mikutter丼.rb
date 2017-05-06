@@ -7,13 +7,13 @@ require_relative "monkey_patches"
 require_relative "datasource"
 require_relative "models"
 require_relative "settings"
+require_relative "world_setting"
 
 Plugin.create(:"mikutter丼") {
   @timelines = [
     [ :streaming_local_timeline, "ローカルタイムライン" ],
     [ :streaming_public_timeline, "連邦タイムライン" ],
     [ :streaming_user_timeline, "ユーザタイムライン" ],
-#    [ :streaming_hashtag_timeline, "ハッシュタグタイムライン" ],
   ]
 
   def message_factory_start(&xproc)
@@ -42,18 +42,6 @@ Plugin.create(:"mikutter丼") {
     return queue
   end
 
-  def get_client(instance, user, password)
-    tmp_client = Mastodon::REST::Client.new(base_url: instance)
-    app = tmp_client.create_app("mikutter丼", "urn:ietf:wg:oauth:2.0:oob", "read write follow")
-
-    oauth = OAuth2::Client.new(app.client_id, app.client_secret, site: instance)
-    token = oauth.password.get_token(user, password, scope: "read write follow")
-
-    client = Mastodon::REST::Client.new(base_url: instance, bearer_token: token.token)
-
-    return client
-  end
-
   def to_message(mastodon_status)
     avatar_url = if mastodon_status.attributes["account"]["avatar"] =~ /^\//
       UserConfig[:don_instance] + "/" + mastodon_status.attributes["account"]["avatar"]
@@ -80,6 +68,7 @@ Plugin.create(:"mikutter丼") {
 
   on_period { |service|
     if service == Service.primary
+=begin
       Thread.new {
         begin
           if !@client
@@ -108,6 +97,7 @@ Plugin.create(:"mikutter丼") {
           puts e.backtrace
         end
       }
+=end
     end
   }
 }

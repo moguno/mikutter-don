@@ -40,3 +40,37 @@ class DonMessage < Retriever::Model
   entity_class Retriever::Entity::ExtendedTwitterEntity
 end
 
+# ワールドモデル
+class DonWorld < Retriever::Model
+  register(:mastodon, name: "Mastodon")
+
+  field.string(:id, required: true)
+  field.string(:slug, required: true)
+  alias_method(:name, :slug)
+  field.string(:instance, required: true)
+  field.string(:token, required: true)
+
+  def self.build(app_name, instance, user, password)
+    tmp_client = Mastodon::REST::Client.new(base_url: instance)
+    app = tmp_client.create_app(app_name, "urn:ietf:wg:oauth:2.0:oob", "read write follow")
+
+    oauth = OAuth2::Client.new(app.client_id, app.client_secret, site: instance)
+    token = oauth.password.get_token(user, password, scope: "read write follow")
+
+    client = Mastodon::REST::Client.new(base_url: instance, bearer_token: token.token)
+
+    me = client.verify_credentials
+
+    self.new(
+      id: "mastodon#{me.id}",
+      slug: "mastodon#{me.id}",
+      instance: instance,
+      token: token.token,
+      user: me.username
+    )
+  end
+
+  def inspect
+    "#{self[:user]}@#{self[:instance]}"
+  end
+end
