@@ -7,13 +7,13 @@ require_relative "monkey_patches"
 require_relative "datasource"
 require_relative "models"
 require_relative "settings"
+require_relative "imageopener"
 
 Plugin.create(:"mikutter丼") {
   @timelines = [
     [ :streaming_local_timeline, "ローカルタイムライン" ],
     [ :streaming_public_timeline, "連邦タイムライン" ],
     [ :streaming_user_timeline, "ユーザタイムライン" ],
-#    [ :streaming_hashtag_timeline, "ハッシュタグタイムライン" ],
   ]
 
   def message_factory_start(&xproc)
