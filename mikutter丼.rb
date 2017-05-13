@@ -8,6 +8,7 @@ require_relative "datasource"
 require_relative "models"
 require_relative "settings"
 require_relative "imageopener"
+require_relative "command"
 
 Plugin.create(:"mikutter丼") {
   @timelines = [
@@ -62,6 +63,7 @@ Plugin.create(:"mikutter丼") {
     end
 
     user = DonUser.new_ifnecessary(
+      id:  mastodon_status.attributes["account"]["id"],
       name: mastodon_status.attributes["account"]["username"],
       idname: mastodon_status.attributes["account"]["acct"],
       uri: mastodon_status.attributes["account"]["url"],
@@ -69,6 +71,7 @@ Plugin.create(:"mikutter丼") {
     )
 
     message = DonMessage.new_ifnecessary(
+      id:  mastodon_status.attributes["id"],
       uri: mastodon_status.attributes["url"],
       created: Time.parse(mastodon_status.attributes["created_at"]).localtime,
       description: Sanitize.clean(mastodon_status.attributes["content"]),
