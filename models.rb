@@ -1,14 +1,3 @@
-require "fnv"
-
-module IdentityUtils
-
-  # URIからIDを作る
-  def id
-    # 軽いと噂のFNV1ハッシュ関数
-    @fnv ||= FNV.new
-    @fnv.fnv1a_64(self.uri)
-  end
-end
 
 # ユーザーモデル
 class DonUser < Retriever::Model
@@ -36,7 +25,8 @@ class DonMessage < Retriever::Model
   field.string(:uri, required: true)
   field.has(:user, DonUser, required: true)
   field.int(:id, required: true)
+  field.int(:favorite_count, required: true)
+  field.int(:retweet_count, required: true)
 
   entity_class(Retriever::Entity::URLEntity)
 end
-

@@ -56,25 +56,42 @@ Plugin.create(:"mikutter丼") {
   end
 
   def to_message(mastodon_status)
-    avatar_url = if mastodon_status.attributes["account"]["avatar"] =~ /^\//
-      UserConfig[:don_instance] + "/" + mastodon_status.attributes["account"]["avatar"]
+    target = if mastodon_status.attributes["reblog"]
+      mastodon_status.attributes["reblog"]
     else
-      mastodon_status.attributes["account"]["avatar"]
+      mastodon_status.attributes
+    end
+
+    modified_time = mastodon_status.attributes["created_at"]
+
+    avatar_url = if target["account"]["avatar"] =~ /^\//
+      UserConfig[:don_instance] + "/" + target["account"]["avatar"]
+    else
+      target["account"]["avatar"]
+    end
+
+    display_name = if target["account"]["display_name"] != ""
+      target["account"]["display_name"]
+    else
+      target["account"]["username"]
     end
 
     user = DonUser.new_ifnecessary(
-      id:  mastodon_status.attributes["account"]["id"],
-      name: mastodon_status.attributes["account"]["username"],
-      idname: mastodon_status.attributes["account"]["acct"],
-      uri: mastodon_status.attributes["account"]["url"],
+      id:  target["account"]["id"],
+      name: display_name,
+      idname: target["account"]["acct"],
+      uri: target["account"]["url"],
       profile_image_url: avatar_url
     )
 
     message = DonMessage.new_ifnecessary(
-      id:  mastodon_status.attributes["id"],
-      uri: mastodon_status.attributes["url"],
-      created: Time.parse(mastodon_status.attributes["created_at"]).localtime,
-      description: Sanitize.clean(mastodon_status.attributes["content"]),
+      id:  target["id"],
+      uri: target["url"],
+      created: Time.parse(target["created_at"]).localtime,
+      modified: Time.parse(modified_time).localtime,
+      description: Sanitize.clean(target["content"]),
+      favorite_count: target["favourites_count"],
+      retweet_count: target["reblogs_count"],
       user: user
     )
 
